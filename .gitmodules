@@ -1,0 +1,3 @@
+[submodule "open5e"]
+	path = open5e
+	url = git@github.com:bradyslot/open5e-api.git
