@@ -12,6 +12,7 @@ use std::fs::{self, DirEntry};
 use std::path::Path;
 use std::cell::RefCell;
 use chrono::{DateTime, NaiveDateTime, Utc};
+use lazy_static::lazy_static;
 
 const DATA_DIR: &str = "data";
 
@@ -80,16 +81,22 @@ fn visit_dirs(dir: &Path, cb: &dyn Fn(&DirEntry)) -> io::Result<()> {
     Ok(())
 }
 
+lazy_static! {
+    static ref MANIFEST_CACHE: Vec<Manifest> = {
+        let manifest: RefCell<Vec<Manifest>> = RefCell::new(Vec::new());
+
+        visit_dirs(Path::new(DATA_DIR), &|entry: &DirEntry| {
+            manifest.borrow_mut().push(file_info(&entry.path()));
+        })
+        .unwrap();
+
+        manifest.into_inner()
+    };
+}
+
 #[get("/manifest")]
 fn get_manifest() -> Value {
-    let manifest: RefCell<Vec<Manifest>> = RefCell::new(Vec::new());
-
-    visit_dirs(Path::new(DATA_DIR), &|entry: &DirEntry| {
-        manifest.borrow_mut().push(file_info(&entry.path()));
-    })
-    .unwrap();
-
-    json!(manifest.into_inner())
+    json!(&*MANIFEST_CACHE)
 }
 
 #[launch]
